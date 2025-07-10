@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import random
 import sqlite3
 import os
@@ -24,21 +25,22 @@ async def on_ready():
     await bot.tree.sync()  # スラッシュコマンドを同期
     print(f'{bot.user} がオンラインになりました！')
 
-@bot.command()
-async def submit(ctx, *, theme):
-    c.execute("INSERT INTO themes VALUES (?, ?)", (theme, ctx.author.id))
+@bot.tree.command(name="submit", description="トークテーマを投稿します")
+@app_commands.describe(theme="投稿するトークテーマ")
+async def submit(interaction: discord.Interaction, theme: str):
+    c.execute("INSERT INTO themes VALUES (?, ?)", (theme, interaction.user.id))
     conn.commit()
-    await ctx.send(f"テーマ「{theme}」を投稿しました！")
+    await interaction.response.send_message(f"テーマ「{theme}」を投稿しました！")
 
-@bot.command()
-async def gacha(ctx):
+@bot.tree.command(name="gacha", description="投稿されたテーマからランダムに選びます")
+async def gacha(interaction: discord.Interaction):
     c.execute("SELECT theme FROM themes")
     themes = c.fetchall()
     if themes:
         random_theme = random.choice(themes)[0]
-        await ctx.send(f"今日のトークテーマは：**{random_theme}**")
+        await interaction.response.send_message(f"今日のトークテーマは：**{random_theme}**")
     else:
-        await ctx.send("まだテーマが投稿されていません。")
+        await interaction.response.send_message("まだテーマが投稿されていません。")
 
 # キープアライブサーバーを起動
 keep_alive()
