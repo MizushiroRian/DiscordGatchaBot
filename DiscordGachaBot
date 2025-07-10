@@ -1,0 +1,69 @@
+import discord
+from discord.ext import commands
+import random
+import sqlite3
+import os
+from keep_alive import keep_alive
+
+# 特権Intentを有効化
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+intents.presences = True
+
+# Botを初期化
+bot = commands.Bot(command_prefix='/', intents=intents)
+
+# データベース設定
+conn = sqlite3.connect('themes.db')
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS themes (theme TEXT, user_id INTEGER)''')
+
+@bot.event
+async def on_ready():
+    print(f'{bot.user} がオンラインになりました！')
+
+@bot.command()
+async def submit(ctx, *, theme):
+    c.execute("INSERT INTO themes VALUES (?, ?)", (theme, ctx.author.id))
+    conn.commit()
+    await ctx.send(f"テーマ「{theme}」を投稿しました！")
+
+@bot.command()
+async def gacha(ctx):
+    c.execute("SELECT theme FROM themes")
+    themes = c.fetchall()
+    if themes:
+        random_theme = random.choice(themes)[0]
+        await ctx.send(f"今日のトークテーマは：**{random_theme}**")
+    else:
+        await ctx.send("まだテーマが投稿されていません。")
+
+# キープアライブサーバーを起動
+keep_alive()
+
+# Botトークンを環境変数から取得
+bot.run(os.getenv('BOT_TOKEN'))
+
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is online"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+discord.py==2.3.2
+flask==2.3.2
+python-dotenv==1.0.1
+
+.env
+themes.db
