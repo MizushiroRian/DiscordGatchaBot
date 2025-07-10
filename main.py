@@ -42,6 +42,27 @@ async def gacha(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("まだテーマが投稿されていません。")
 
+@bot.tree.command(name="reset", description="すべてのトークテーマをリセットします（管理者専用）")
+@app_commands.checks.has_permissions(manage_guild=True)  # 管理者権限を要求
+async def reset(interaction: discord.Interaction):
+    # 確認メッセージを送信
+    await interaction.response.send_message(
+        "⚠️ すべてのトークテーマを削除します。この操作は元に戻せません。続行しますか？\n"
+        "続行する場合、10秒以内に「はい」と返信してください。",
+        ephemeral=True  # 他のユーザーには見えない
+    )
+    def check(m):
+        return m.author == interaction.user and m.content.lower() == "はい" and m.channel == interaction.channel
+    try:
+        # 10秒以内に「はい」の返信を待つ
+        msg = await bot.wait_for('message', check=check, timeout=10.0)
+        # データベースをリセット
+        c.execute("DELETE FROM themes")
+        conn.commit()
+        await interaction.followup.send("✅ すべてのトークテーマをリセットしました！", ephemeral=True)
+    except:
+        await interaction.followup.send("⏰ タイムアウトしました。リセットはキャンセルされました。", ephemeral=True)
+
 # キープアライブサーバーを起動
 keep_alive()
 
