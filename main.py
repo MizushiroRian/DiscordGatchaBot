@@ -21,6 +21,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS themes (theme TEXT, user_id INTEGER)''')
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync()  # スラッシュコマンドを同期
     print(f'{bot.user} がオンラインになりました！')
 
 @bot.command()
